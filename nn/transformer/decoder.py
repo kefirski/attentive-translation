@@ -21,31 +21,25 @@ class Decoder(nn.Module):
             for i in range(n_layers)
         ])
 
-    def forward(self, decoder_input, condition, decoder_mask=None, condition_mask=None):
+    def forward(self, decoder_input, condition, self_mask=None, condition_mask=None):
         """
         :param decoder_input: An float tensor with shape of [batch_size, decoder_len, h_size]
         :param condition: An float tensor with shape of [batch_size, encoder_len, h_size]
-        :param decoder_mask: An byte tensor with shape of [batch_size, decoder_len, decoder_len]
-        :param condition_mask: An byte tensor with shape of [batch_size, encoder_len]
+        :param self_mask: An byte tensor with shape of [batch_size, decoder_len, decoder_len]
+        :param condition_mask: An byte tensor with shape of [batch_size, decoder_len, encoder_len]
         :return: An float tensor with shape of [batch_size, seq_len, h_size]
         """
 
         batch_size, decoder_len, _ = decoder_input.size()
-        decoder_mask = t.eq(decoder_input.abs().sum(2), 0).repeat(1, decoder_len) \
-            .view(batch_size, decoder_len, -1).data
 
         autogressive_mask = self.autogressive_mask(batch_size, decoder_len, decoder_input.is_cuda)
-        decoder_mask += autogressive_mask
-        decoder_mask = t.ge(decoder_mask, 1)
-
-        condition_mask = t.eq(condition.abs().sum(2), 0).data
-        condition_mask = condition_mask.repeat(1, decoder_len).view(batch_size, decoder_len, -1)
+        self_mask = autogressive_mask if self_mask is None else t.ge(autogressive_mask + self_mask, 1)
 
         out = decoder_input
         for layer in self.layers:
-            out = layer(out, condition, decoder_mask, condition_mask)
+            out = layer(out, condition, self_mask, condition_mask)
 
-        return out, []
+        return out
 
     @staticmethod
     def autogressive_mask(batch_size, length, cuda):

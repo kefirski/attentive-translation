@@ -5,9 +5,9 @@ from torch.autograd import Variable
 from torch.nn.init import xavier_normal
 
 
-class PositionalEmbedding(nn.Module):
+class PositionalEmbeddings(nn.Module):
     def __init__(self, vocab_size, max_len, embedding_size):
-        super(PositionalEmbedding, self).__init__()
+        super(PositionalEmbeddings, self).__init__()
 
         self.max_len = max_len
         self.embedding_size = embedding_size

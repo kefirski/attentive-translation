@@ -1,4 +1,3 @@
-import torch as t
 import torch.nn as nn
 
 from .position_wise_nn import PositionWiseNN
@@ -21,26 +20,18 @@ class Encoder(nn.Module):
             for _ in range(n_layers)
         ])
 
-    def forward(self, input):
+    def forward(self, input, mask=None):
         """
         :param input: An float tensor with shape of [batch_size, seq_len, h_size]
+        :param mask: An byte tensor with shape of [batch_size, seq_len, seq_len]
         :return: An float tensor with shape of [batch_size, seq_len, h_size]
         """
-
-        mask = t.eq(input.abs().sum(2), 0).data
-        _, seq_len = mask.size()
-        mask = mask.repeat(1, seq_len).view(-1, seq_len, seq_len)
 
         out = input
         for layer in self.layers:
             out = layer(out, mask)
 
         return out
-
-    def fine_parameters(self):
-        for layer in self.layers:
-            for p in layer.attention.fine_parameters():
-                yield p
 
 
 class EncoderLayer(nn.Module):
