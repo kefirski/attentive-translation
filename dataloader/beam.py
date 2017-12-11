@@ -4,9 +4,7 @@ class Beam:
         self.data = data
 
     def update(self, prob, token):
-        self.prob = prob
-        self.data += token
-        return self
+        return Beam(prob, self.data + token)
 
     def __str__(self):
-        return 'p = {}, data = {}'.format(self.prob, self.data)
+        return 'p = {}, data = {}\n'.format(self.prob, self.data)

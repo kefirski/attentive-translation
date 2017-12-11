@@ -1,11 +1,11 @@
 import collections
 import os
-from copy import copy
 
 import numpy as np
 import torch as t
 from six.moves import cPickle
 from torch.autograd import Variable
+from .beam import Beam
 
 
 class Dataloader():
@@ -139,38 +139,36 @@ class Dataloader():
         :return: Batches
         """
 
-        input = lines[0]
-        decoder_input = [line[:-1] for line in lines[1]]
-        decoder_target = [line[1:] for line in lines[1]]
+        condition = lines[0]
+        input = [line[:-1] for line in lines[1]]
+        target = [line[1:] for line in lines[1]]
 
+        condition = self.padd_sequences(condition)
         input = self.padd_sequences(input)
-        decoder_input = self.padd_sequences(decoder_input)
-        decoder_target = self.padd_sequences(decoder_target)
+        target = self.padd_sequences(target)
 
-        return input, decoder_input, decoder_target
+        return condition, input, target
 
     @staticmethod
-    def padd_sequences(sequences):
+    def padd_sequences(lines):
 
-        lengths = [len(line) for line in sequences]
+        lengths = [len(line) for line in lines]
         max_length = max(lengths)
 
-        '''
-        Pad token has idx 0
-        '''
+        # Pad token has idx 0
         return np.array([line + [0] * (max_length - lengths[i])
-                         for i, line in enumerate(sequences)])
+                         for i, line in enumerate(lines)])
 
     def torch(self, batch_size, cuda, volatile=False):
 
-        input, decoder_input, target = self.next_batch(batch_size)
-        input, decoder_input, target = [Variable(t.from_numpy(var), volatile=volatile)
-                                        for var in [input, decoder_input, target]]
+        condition, input, target = self.next_batch(batch_size)
+        condition, input, target = [Variable(t.from_numpy(var), volatile=volatile)
+                                    for var in [condition, input, target]]
 
         if cuda:
-            input, decoder_input, target = [var.cuda() for var in [input, decoder_input, target]]
+            condition, input, target = [var.cuda() for var in [condition, input, target]]
 
-        return input, decoder_input, target
+        return condition, input, target
 
     def go_input(self, batch_size, cuda):
 
@@ -192,17 +190,20 @@ class Dataloader():
 
         return tensor
 
-    def sample_char(self, p, n_beams=5):
+    def sample_char(self, probs, n_beams):
 
-        p = [[i, val] for i, val in enumerate(p)]
-        p = sorted(p, key=lambda pair: pair[1])[-n_beams:]
-        return [(idx, self.idx_to_token[idx], prob) for idx, prob in p]
+        probs = [[i, val] for i, val in enumerate(probs)]
+        probs = sorted(probs, key=lambda pair: pair[1])[-n_beams:]
 
-    def beam_update(self, beams, probs, n_beams=5):
+        return [Beam(p, self.idx_to_token[idx]) for idx, p in probs]
 
-        for i in range(len(beams)):
+    def beam_update(self, beams, probs):
+
+        n_beams = len(beams)
+
+        for i in range(n_beams):
             probs[i] *= beams[i].prob
 
         probs = [[beam, idx, p] for i, beam in enumerate(beams) for idx, p in enumerate(probs[i])]
         probs = sorted(probs, key=lambda triple: triple[2])[-n_beams:]
-        return [copy(beam).update(prob, self.idx_to_token[idx]) for beam, idx, prob in probs]
+        return [beam.update(prob, self.idx_to_token[idx]) for beam, idx, prob in probs]
