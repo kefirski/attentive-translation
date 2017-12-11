@@ -14,16 +14,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='inf')
     parser.add_argument('--num-iterations', type=int, default=250_000, metavar='NI',
                         help='num iterations (default: 250_000)')
-    parser.add_argument('--steps', type=int, default=1, metavar='S',
-                        help='num steps before optimization step (default: 15)')
-    parser.add_argument('--batch-size', type=int, default=2, metavar='BS',
-                        help='batch size (default: 80)')
+    parser.add_argument('--steps', type=int, default=5, metavar='S',
+                        help='num steps before optimization step (default: 5)')
+    parser.add_argument('--batch-size', type=int, default=20, metavar='BS',
+                        help='batch size (default: 20)')
     parser.add_argument('--num-threads', type=int, default=4, metavar='BS',
                         help='num threads (default: 4)')
     parser.add_argument('--use-cuda', type=bool, default=False, metavar='CUDA',
                         help='use cuda (default: False)')
-    parser.add_argument('--lr', type=float, default=0.0005, metavar='LR',
-                        help='learning rate (default: 0.0005)')
     parser.add_argument('--dropout', type=float, default=0.15, metavar='D',
                         help='dropout rate (default: 0.15)')
     parser.add_argument('--save', type=str, default='trained_model', metavar='TS',
