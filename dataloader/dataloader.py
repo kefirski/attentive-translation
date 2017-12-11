@@ -94,7 +94,7 @@ class Dataloader():
         self.data = self.en_ru_dir(data[0], data[1])
         del data
 
-        self.max_seq_len = max([
+        self.max_len = max([
             max([
                 len(line) for line in lines
             ])
@@ -115,7 +115,7 @@ class Dataloader():
 
         self.data = cPickle.load(open(self.tensor_file, "rb"))
 
-        self.max_seq_len = max([
+        self.max_len = max([
             max([
                 len(line) for line in lines
             ])

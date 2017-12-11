@@ -1,3 +1,4 @@
+import torch as t
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.weight_norm import weight_norm
@@ -38,7 +39,7 @@ class Transormer(nn.Module):
         :return: An float tensor with shape of [batch_size, decoder_len, vocab_size]
         """
 
-        batch_size, seq_len, _ = input.size()
+        batch_size, seq_len = input.size()
 
         condition_mask = self.mask(condition)
         decoder_in_mask = self.mask(input)
@@ -120,3 +121,8 @@ class Transormer(nn.Module):
                 break
 
         return '\n'.join([beam.data for beam in beams])
+
+    def learnable_parameters(self):
+        for p in self.parameters():
+            if p.requires_grad:
+                yield p
