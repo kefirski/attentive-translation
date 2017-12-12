@@ -74,9 +74,9 @@ class ScaledDotProductAttention(nn.Module):
 
             return mask
 
-        mask = t.tril(t.ones(seq_len, seq_len), -self.m_size - 1)
-        mask += t.triu(t.ones(seq_len, seq_len), self.m_size)
-        mask[:, self.m_size + 1:size] = t.zeros(seq_len, self.m_size)
+        mask = t.tril(t.ones(seq_len, seq_len).byte(), -self.m_size - 1)
+        mask += t.triu(t.ones(seq_len, seq_len).byte(), self.m_size)
+        mask[:, self.m_size + 1:size] = t.zeros(seq_len, self.m_size).byte()
 
         if use_cuda:
             mask = mask.cuda()
