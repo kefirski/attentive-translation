@@ -73,20 +73,14 @@ class ScaledDotProductAttention(nn.Module):
                 mask = mask.cuda()
 
             return mask
-        else:
 
-            result = [(0, size)] * self.m_size
-
-            result += [(i - self.m_size, i + self.m_size + 1)
-                       for i in range(self.m_size, seq_len - self.m_size)]
-
-            result += [(seq_len - 2 * self.m_size - 1, seq_len)] * self.m_size
-
-        mask = t.ones(batch_size, seq_len, seq_len).byte()
-        for i, (a, b) in enumerate(result):
-            mask[:, i, a:b] = t.zeros(batch_size, 1, size)
+        mask = t.tril(t.ones(seq_len, seq_len), -self.m_size - 1)
+        mask += t.triu(t.ones(seq_len, seq_len), self.m_size)
+        mask[:, self.m_size + 1:size] = t.zeros(seq_len, self.m_size)
 
         if use_cuda:
             mask = mask.cuda()
+
+        mask = mask.unsqueeze(0).repeat(batch_size, 1, 1)
 
         return mask
