@@ -48,10 +48,10 @@ class ScaledDotProductAttention(nn.Module):
             attention.data.masked_fill_(mask, -float('inf'))
 
         elif mask is None and self.m_size is not None:
-            attention.data.masked_fill_(self.window_mask(batch_size, query_len), -float('inf'))
+            attention.data.masked_fill_(self.window_mask(batch_size, query_len, q.is_cuda), -float('inf'))
 
         elif mask is not None and self.m_size is not None:
-            window = self.window_mask(batch_size, query_len)
+            window = self.window_mask(batch_size, query_len, q.is_cuda)
             mask = t.ge(window + mask, 1)
 
             mask_intersection = t.eq(mask.min(2)[0], 1).unsqueeze(2).repeat(1, 1, query_len)
@@ -63,7 +63,7 @@ class ScaledDotProductAttention(nn.Module):
 
         return t.bmm(self.dropout(attention), v), attention
 
-    def window_mask(self, batch_size, seq_len):
+    def window_mask(self, batch_size, seq_len, use_cuda):
 
         size = 2 * self.m_size + 1 if self.m_size is not None else seq_len
 
@@ -81,5 +81,8 @@ class ScaledDotProductAttention(nn.Module):
         mask = t.ones(batch_size, seq_len, seq_len).byte()
         for i, (a, b) in enumerate(result):
             mask[:, i, a:b] = t.zeros(batch_size, 1, size)
+
+        if use_cuda:
+            mask = mask.cuda()
 
         return mask
