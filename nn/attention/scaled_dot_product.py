@@ -77,8 +77,8 @@ class ScaledDotProductAttention(nn.Module):
 
             result = [(0, size)] * self.m_size
 
-            for i in range(self.m_size, seq_len - self.m_size):
-                result += [(i - self.m_size, i + self.m_size + 1)]
+            result += [(i - self.m_size, i + self.m_size + 1)
+                       for i in range(self.m_size, seq_len - self.m_size)]
 
             result += [(seq_len - 2 * self.m_size - 1, seq_len)] * self.m_size
 
