@@ -5,7 +5,7 @@ from ..attention import MultiHeadAttention
 
 
 class Encoder(nn.Module):
-    def __init__(self, n_layers, n_heads, h_size, k_size, v_size, dropout=0.1):
+    def __init__(self, n_layers, n_heads, h_size, k_size, v_size, m_size, dropout=0.1):
         """
         :param n_heads: Number of attention heads
         :param h_size: hidden size of input
@@ -16,7 +16,7 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
 
         self.layers = nn.ModuleList([
-            EncoderLayer(n_heads, h_size, k_size, v_size, dropout)
+            EncoderLayer(n_heads, h_size, k_size, v_size, m_size, dropout)
             for _ in range(n_layers)
         ])
 
@@ -35,7 +35,7 @@ class Encoder(nn.Module):
 
 
 class EncoderLayer(nn.Module):
-    def __init__(self, n_heads, h_size, k_size, v_size, dropout=0.1):
+    def __init__(self, n_heads, h_size, k_size, v_size, m_size, dropout=0.1):
         """
         :param n_heads: Number of attention heads
         :param h_size: hidden size of input
@@ -44,7 +44,7 @@ class EncoderLayer(nn.Module):
         :param dropout: drop prob
         """
         super(EncoderLayer, self).__init__()
-        self.attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, dropout)
+        self.attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, m_size, dropout)
         self.position_wise = PositionWiseNN(h_size, h_size * 4, dropout)
 
     def forward(self, input, mask=None):

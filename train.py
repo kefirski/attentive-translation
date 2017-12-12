@@ -35,7 +35,7 @@ if __name__ == "__main__":
     t.set_num_threads(args.num_threads)
     loader = Dataloader('/Users/daniil/projects/atran/dataloader/data/')
 
-    model = Transormer(loader.vocab_size, loader.max_len, 6, 8, 120, 25, 25, dropout=args.dropout)
+    model = Transormer(loader.vocab_size, loader.max_len, 6, 12, 120, 25, 25, 5, dropout=args.dropout)
     if args.use_cuda:
         model = model.cuda()
 
@@ -47,11 +47,13 @@ if __name__ == "__main__":
 
     for i in range(args.num_iterations):
 
+        optimizer.update_learning_rate()
+
         out = 0
         for step in range(args.steps):
-            condition, condition, target = loader.torch(args.batch_size, args.use_cuda, volatile=False)
+            condition, input, target = loader.torch(args.batch_size, args.use_cuda, volatile=False)
 
-            nll = model.loss(condition, condition, target, crit)
+            nll = model.loss(condition, input, target, crit)
             nll /= args.steps
             out += nll.cpu().data
 
@@ -61,6 +63,7 @@ if __name__ == "__main__":
         optimizer.zero_grad()
 
         if i % 25 == 0:
+            writer.add_scalar('nll', out, i)
             print('i {}, nll {}'.format(i, out.numpy()))
             print('_________')
 

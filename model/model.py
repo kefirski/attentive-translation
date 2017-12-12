@@ -9,7 +9,7 @@ from nn.transformer import Encoder, Decoder
 
 
 class Transormer(nn.Module):
-    def __init__(self, vocab_size, max_seq_len, n_layers=6, n_heads=8, h_size=120, k_size=25, v_size=25, dropout=0.1):
+    def __init__(self, vocab_size, max_seq_len, n_layers, n_heads, h_size, k_size, v_size, m_size, dropout):
         """
         :param n_heads: Number of attention heads
         :param h_size: hidden size of input
@@ -23,8 +23,8 @@ class Transormer(nn.Module):
 
         self.embeddings = PositionalEmbeddings(vocab_size, max_seq_len, h_size)
 
-        self.encoder = Encoder(n_layers, n_heads, h_size, k_size, v_size, dropout)
-        self.decoder = Decoder(n_layers, n_heads, h_size, k_size, v_size, dropout)
+        self.encoder = Encoder(n_layers, n_heads, h_size, k_size, v_size, m_size, dropout)
+        self.decoder = Decoder(n_layers, n_heads, h_size, k_size, v_size, m_size, dropout)
 
         self.out_fc = nn.Sequential(
             weight_norm(nn.Linear(h_size, 4 * h_size)),
@@ -34,9 +34,9 @@ class Transormer(nn.Module):
 
     def forward(self, condition, input):
         """
-        :param condition: An long tensor with shape of [batch_size, encoder_len]
-        :param input: An long tensor with shape of [batch_size, decoder_len]
-        :return: An float tensor with shape of [batch_size, decoder_len, vocab_size]
+        :param condition: An long tensor with shape of [batch_size, condition_len]
+        :param input: An long tensor with shape of [batch_size, input_len]
+        :return: An float tensor with shape of [batch_size, input_len, vocab_size]
         """
 
         batch_size, seq_len = input.size()
