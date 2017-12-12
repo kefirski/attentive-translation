@@ -86,4 +86,7 @@ class ScaledDotProductAttention(nn.Module):
         for i, (a, b) in enumerate(result):
             mask[:, i, a:b] = t.zeros(batch_size, 1, size)
 
+        if use_cuda:
+            mask = mask.cuda()
+
         return mask
