@@ -35,7 +35,7 @@ if __name__ == "__main__":
     t.set_num_threads(args.num_threads)
     loader = Dataloader('/home/daniil/projects/attentive-translation/dataloader/data/')
 
-    model = Transormer(loader.vocab_size, loader.max_len, 4, 10, 120, 25, 25, 5, dropout=args.dropout)
+    model = Transormer(loader.vocab_size, loader.max_len, 4, 10, 120, 25, 25, None, dropout=args.dropout)
     if args.use_cuda:
         model = model.cuda()
 

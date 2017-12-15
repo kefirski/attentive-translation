@@ -1,10 +1,9 @@
 import torch as t
 import torch.nn as nn
-from torch.nn.utils import weight_norm
 
 from .position_wise_nn import PositionWiseNN
 from ..attention import MultiHeadAttention
-from ..conv import GLUResNet, GLU
+from ..conv import GLUResNet
 
 
 class Decoder(nn.Module):
