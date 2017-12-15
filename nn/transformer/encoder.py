@@ -2,7 +2,7 @@ import torch as t
 import torch.nn as nn
 from torch.nn.utils import weight_norm
 
-from .position_wise_nn import PositionWiseNN
+from .context_wise_nn import ContextWiseNN
 from ..attention import MultiHeadAttention
 from ..conv import GLUResNet, GLU
 
@@ -24,18 +24,21 @@ class Encoder(nn.Module):
 
             GLUResNet(h_size, 2),
 
-            weight_norm(nn.Conv1d(h_size, 2 * h_size, 5, 1, padding=2, dilation=1, bias=False)),
+            weight_norm(nn.Conv1d(h_size, 2 * h_size, 5, stride=1, padding=2, bias=False)),
             GLU(),
 
-            weight_norm(nn.Conv1d(h_size, 2 * h_size, 5, 2, padding=2, dilation=2, bias=False)),
+            weight_norm(nn.Conv1d(h_size, 2 * h_size, 5, stride=2, padding=2, bias=False)),
             GLU(),
 
-            weight_norm(nn.Conv1d(h_size, 2 * h_size, 5, 2, padding=2, dilation=2, bias=False)),
+            weight_norm(nn.Conv1d(h_size, 2 * h_size, 5, stride=2, padding=2, bias=False)),
+            GLU(),
+
+            weight_norm(nn.Conv1d(h_size, 2 * h_size, 5, stride=2, padding=2, bias=False)),
             GLU(),
 
             GLUResNet(h_size, 2),
 
-            weight_norm(nn.Conv1d(h_size, 2 * h_size, 5, 1, padding=2, dilation=2, bias=False)),
+            weight_norm(nn.Conv1d(h_size, 2 * h_size, 5, stride=1, padding=2, bias=False)),
             GLU(),
 
             GLUResNet(h_size, 3)
@@ -77,7 +80,7 @@ class EncoderLayer(nn.Module):
         """
         super(EncoderLayer, self).__init__()
         self.attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, m_size, dropout)
-        self.position_wise = PositionWiseNN(h_size, h_size * 4, dropout)
+        self.wise = ContextWiseNN(h_size, h_size * 2, dropout)
 
     def forward(self, input, mask=None):
         """
@@ -92,6 +95,6 @@ class EncoderLayer(nn.Module):
         '''
 
         out, _ = self.attention(q=input, k=input, v=input, mask=mask)
-        out = self.position_wise(out)
+        out = self.wise(out)
 
         return out

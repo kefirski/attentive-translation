@@ -1,7 +1,7 @@
 import torch as t
 import torch.nn as nn
 
-from .position_wise_nn import PositionWiseNN
+from .context_wise_nn import ContextWiseNN
 from ..attention import MultiHeadAttention
 from ..conv import GLUResNet
 
@@ -26,21 +26,22 @@ class Decoder(nn.Module):
 
     def forward(self, input, condition, condition_mask=None):
         """
-        :param input: An float tensor with shape of [batch_size, decoder_len, h_size]
-        :param condition: An float tensor with shape of [batch_size, encoder_len, h_size]
-        :param condition_mask: An byte tensor with shape of [batch_size, decoder_len, encoder_len]
+        :param input: An float tensor with shape of [batch_size, input_len, h_size]
+        :param condition: An float tensor with shape of [batch_size, condition_len, h_size]
+        :param condition_mask: An byte tensor with shape of [batch_size, input_len, encoder_len]
         :return: An float tensor with shape of [batch_size, seq_len, h_size]
         """
 
-        batch_size, decoder_len, _ = input.size()
+        batch_size, input_len, _ = input.size()
 
         input = input.transpose(1, 2)
         input = self.conv(input)
         input = input.transpose(1, 2)
 
         self_mask = t.eq(input.abs().sum(2), 0).data
-        self_mask = self_mask.unsqueeze(1).repeat(1, decoder_len, 1)
-        self_mask += self.autogressive_mask(batch_size, decoder_len, input.is_cuda)
+        self_mask = self_mask.unsqueeze(1).repeat(1, input_len, 1)
+        self_mask += self.autogressive_mask(batch_size, input_len, input.is_cuda)
+        self_mask = t.ge(self_mask, 1)
 
         out = input
         for layer in self.layers:
@@ -72,7 +73,7 @@ class DecoderLayer(nn.Module):
 
         self.self_attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, m_size, dropout)
         self.out_attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, None, dropout) if out else None
-        self.position_wise = PositionWiseNN(h_size, h_size * 4, dropout)
+        self.wise = ContextWiseNN(h_size, h_size * 2, autoregressive=True, dropout=dropout)
 
     def forward(self, input, condition, self_mask=None, out_mask=None):
         """
@@ -86,6 +87,6 @@ class DecoderLayer(nn.Module):
         out, _ = self.self_attention(q=input, k=input, v=input, mask=self_mask)
         if self.out:
             out, _ = self.out_attention(q=out, k=condition, v=condition, mask=out_mask)
-        out = self.position_wise(out)
+        out = self.wise(out)
 
-        return out
+        return out + input

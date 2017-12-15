@@ -16,7 +16,7 @@ if __name__ == "__main__":
                         help='num iterations (default: 250_000)')
     parser.add_argument('--steps', type=int, default=5, metavar='S',
                         help='num steps before optimization step (default: 5)')
-    parser.add_argument('--batch-size', type=int, default=20, metavar='BS',
+    parser.add_argument('--batch-size', type=int, default=2, metavar='BS',
                         help='batch size (default: 20)')
     parser.add_argument('--num-threads', type=int, default=4, metavar='BS',
                         help='num threads (default: 4)')
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     writer = SummaryWriter(args.tensorboard)
 
     t.set_num_threads(args.num_threads)
-    loader = Dataloader('/home/daniil/projects/attentive-translation/dataloader/data/')
+    loader = Dataloader('/Users/daniil/projects/atran/dataloader/data/')
 
     model = Transormer(loader.vocab_size, loader.max_len, 4, 10, 120, 25, 25, None, dropout=args.dropout)
     if args.use_cuda:
