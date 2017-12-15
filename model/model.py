@@ -88,7 +88,7 @@ class Transormer(nn.Module):
         use_cuda = condition.is_cuda
 
         condition = self.embeddings(condition)
-        condition = self.encoder(condition)
+        condition, _ = self.encoder(condition)
 
         input = loader.go_input(1, use_cuda)
         input = self.embeddings(input)
