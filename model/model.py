@@ -23,7 +23,7 @@ class Transormer(nn.Module):
 
         self.embeddings = PositionalEmbeddings(vocab_size, max_seq_len, h_size)
 
-        self.encoder = Encoder(n_layers, n_heads, h_size, k_size, v_size, m_size, dropout)
+        self.encoder = Encoder(n_layers, n_heads, h_size, k_size, v_size, None, dropout)
         self.decoder = Decoder(n_layers, n_heads, h_size, k_size, v_size, m_size, dropout)
 
         self.out_fc = nn.Sequential(
@@ -41,15 +41,13 @@ class Transormer(nn.Module):
 
         batch_size, seq_len = input.size()
 
-        condition_mask = self.mask(condition)
-        decoder_in_mask = self.mask(input)
-        decoder_out_mask = self.mask(condition, repeat_size=seq_len)
-
         condition = self.embeddings(condition)
         input = self.embeddings(input)
 
-        condition = self.encoder(condition, mask=condition_mask)
-        out = self.decoder(input, condition, decoder_in_mask, decoder_out_mask)
+        condition, condition_mask = self.encoder(condition)
+
+        condition_mask = condition_mask.unsqueeze(1).repeat(1, seq_len, 1)
+        out = self.decoder(input, condition, condition_mask)
 
         out = out.view(batch_size * seq_len, -1)
         out = self.out_fc(out).view(batch_size, seq_len, -1)

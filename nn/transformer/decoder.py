@@ -1,8 +1,10 @@
 import torch as t
 import torch.nn as nn
+from torch.nn.utils import weight_norm
 
 from .position_wise_nn import PositionWiseNN
 from ..attention import MultiHeadAttention
+from ..conv import GLUResNet, GLU
 
 
 class Decoder(nn.Module):
@@ -16,24 +18,30 @@ class Decoder(nn.Module):
         """
         super(Decoder, self).__init__()
 
+        self.conv = GLUResNet(h_size, 4, autoregressive=True)
+
         self.layers = nn.ModuleList([
-            DecoderLayer(i > 4, n_heads, h_size, k_size, v_size, m_size, dropout)
-            for i in range(n_layers)
+            DecoderLayer(True, n_heads, h_size, k_size, v_size, m_size, dropout)
+            for _ in range(n_layers)
         ])
 
-    def forward(self, input, condition, self_mask=None, condition_mask=None):
+    def forward(self, input, condition, condition_mask=None):
         """
         :param input: An float tensor with shape of [batch_size, decoder_len, h_size]
         :param condition: An float tensor with shape of [batch_size, encoder_len, h_size]
-        :param self_mask: An byte tensor with shape of [batch_size, decoder_len, decoder_len]
         :param condition_mask: An byte tensor with shape of [batch_size, decoder_len, encoder_len]
         :return: An float tensor with shape of [batch_size, seq_len, h_size]
         """
 
         batch_size, decoder_len, _ = input.size()
 
-        autogressive_mask = self.autogressive_mask(batch_size, decoder_len, input.is_cuda)
-        self_mask = autogressive_mask if self_mask is None else t.ge(autogressive_mask + self_mask, 1)
+        input = input.transpose(1, 2)
+        input = self.conv(input)
+        input = input.transpose(1, 2)
+
+        self_mask = t.eq(input.abs().sum(2), 0).data
+        self_mask = self_mask.unsqueeze(1).repeat(1, decoder_len, 1)
+        self_mask += self.autogressive_mask(batch_size, decoder_len, input.is_cuda)
 
         out = input
         for layer in self.layers:

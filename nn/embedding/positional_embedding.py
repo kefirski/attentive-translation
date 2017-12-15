@@ -16,6 +16,7 @@ class PositionalEmbeddings(nn.Module):
         self.positional_embeddings = nn.Embedding(int(max_len), embedding_size, padding_idx=0)
 
         self.embeddings.weight = xavier_normal(self.embeddings.weight)
+        self.embeddings.weight.data[0].fill_(0)
         self.position_encoding_init()
 
     def forward(self, input):

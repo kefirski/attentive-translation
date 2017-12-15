@@ -33,9 +33,9 @@ if __name__ == "__main__":
     writer = SummaryWriter(args.tensorboard)
 
     t.set_num_threads(args.num_threads)
-    loader = Dataloader('/home/daniil/projects/attentive-translation//dataloader/data/')
+    loader = Dataloader('/home/daniil/projects/attentive-translation/dataloader/data/')
 
-    model = Transormer(loader.vocab_size, loader.max_len, 6, 8, 120, 25, 25, 5, dropout=args.dropout)
+    model = Transormer(loader.vocab_size, loader.max_len, 4, 10, 120, 25, 25, 5, dropout=args.dropout)
     if args.use_cuda:
         model = model.cuda()
 

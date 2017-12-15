@@ -154,6 +154,7 @@ class Dataloader():
 
         lengths = [len(line) for line in lines]
         max_length = max(lengths)
+        max_length = max_length if max_length > 20 else 20
 
         # Pad token has idx 0
         return np.array([line + [0] * (max_length - lengths[i])

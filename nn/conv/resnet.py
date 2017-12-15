@@ -1,6 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .glu import GLU
+
 
 class ResNet(nn.Module):
     def __init__(self, size, num_layers, transpose=False):
@@ -46,3 +48,34 @@ class ResNet(nn.Module):
         return nn.utils.weight_norm(
             nn.Conv1d(size, size, kernel_size=3, stride=1, padding=1, bias=False)
         )
+
+
+class GLUResNet(nn.Module):
+    def __init__(self, size, num_layers, autoregressive=False):
+        super(GLUResNet, self).__init__()
+
+        self.autoregressive = autoregressive
+        padding = 1 if not autoregressive else 2
+
+        self.conv = nn.ModuleList([
+            nn.Sequential(
+                nn.utils.weight_norm(nn.Conv1d(size, 2 * size, kernel_size=3, padding=padding, bias=False)),
+                GLU()
+            )
+
+            for _ in range(num_layers)
+        ])
+
+    def forward(self, input):
+        """
+        :param input: An Float tensor with shape of [batch_size, size, seq_len]
+        :return: An Float tensor with shape of [batch_size, size, seq_len]
+        """
+
+        for layer in self.conv:
+            residual = input
+            out = layer(input)
+
+            input = residual + (out if not self.autoregressive else out[:, :, :-2])
+
+        return input
