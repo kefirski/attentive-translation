@@ -33,7 +33,7 @@ if __name__ == "__main__":
     writer = SummaryWriter(args.tensorboard)
 
     t.set_num_threads(args.num_threads)
-    loader = Dataloader('/Users/daniil/projects/atran/dataloader/data/')
+    loader = Dataloader('/home/daniil/projects/attentive-translation/dataloader/data/')
 
     model = Transormer(loader.vocab_size, loader.max_len, 4, 10, 120, 25, 25, None, dropout=args.dropout)
     if args.use_cuda:
@@ -67,7 +67,7 @@ if __name__ == "__main__":
             print('i {}, nll {}'.format(i, out.numpy()))
             print('_________')
 
-        if i % 50 == 0:
+        if i % 500 == 0:
             condition, _, target = loader.torch(1, args.use_cuda, volatile=True)
             print(''.join([loader.idx_to_token[idx] for idx in condition[0].cpu().data.numpy()]))
             print('_________')
