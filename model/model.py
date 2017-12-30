@@ -1,4 +1,3 @@
-import torch as t
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.weight_norm import weight_norm
@@ -9,13 +8,12 @@ from nn.transformer import Encoder, Decoder
 
 
 class Transormer(nn.Module):
-    def __init__(self, vocab_size, max_seq_len, n_layers, n_heads, h_size, k_size, v_size, m_size, dropout):
+    def __init__(self, vocab_size, max_seq_len, layers, heads, h_size, k_size, drop):
         """
-        :param n_heads: Number of attention heads
+        :param heads: Number of attention heads
         :param h_size: hidden size of input
         :param k_size: size of projected queries and keys
-        :param v_size: size of projected values
-        :param dropout: drop prob
+        :param drop: drop prob
         """
         super(Transormer, self).__init__()
 
@@ -23,8 +21,8 @@ class Transormer(nn.Module):
 
         self.embeddings = PositionalEmbeddings(vocab_size, max_seq_len, h_size)
 
-        self.encoder = Encoder(n_layers, n_heads, h_size, k_size, v_size, None, dropout)
-        self.decoder = Decoder(n_layers, n_heads, h_size, k_size, v_size, m_size, dropout)
+        self.encoder = Encoder(layers, heads, h_size, k_size, k_size, drop)
+        self.decoder = Decoder(layers, heads, h_size, k_size, k_size, drop)
 
         self.out_fc = nn.Sequential(
             weight_norm(nn.Linear(h_size, 4 * h_size)),
@@ -54,19 +52,9 @@ class Transormer(nn.Module):
 
         return out
 
-    @staticmethod
-    def mask(tensor, repeat_size=None):
-
-        _, seq_len = tensor.size()
-        if repeat_size is None:
-            repeat_size = seq_len
-
-        mask = t.eq(tensor, 0).data
-        mask = mask.repeat(1, repeat_size).view(-1, repeat_size, seq_len)
-
-        return mask
-
     def loss(self, condition, input, target, criterion, eval=False):
+
+        batch_size, *_ = condition.size()
 
         if eval:
             self.eval()
@@ -77,11 +65,11 @@ class Transormer(nn.Module):
         out = out.view(-1, self.vocab_size)
         target = target.view(-1)
 
-        nll = criterion(out, target) / condition.size(0)
+        nll = criterion(out, target) / batch_size
 
         return nll
 
-    def generate(self, condition, loader: Dataloader, max_len=100, n_beams=4):
+    def generate(self, condition, loader: Dataloader, max_len=200, n_beams=35):
 
         self.eval()
 
@@ -118,7 +106,7 @@ class Transormer(nn.Module):
             if all([beam.data[-1] == loader.stop_token for beam in beams]):
                 break
 
-        return '\n'.join([beam.data for beam in beams])
+        return beams[-1].data
 
     def learnable_parameters(self):
         for p in self.parameters():

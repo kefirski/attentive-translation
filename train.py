@@ -16,7 +16,7 @@ if __name__ == "__main__":
                         help='num iterations (default: 250_000)')
     parser.add_argument('--steps', type=int, default=5, metavar='S',
                         help='num steps before optimization step (default: 5)')
-    parser.add_argument('--batch-size', type=int, default=2, metavar='BS',
+    parser.add_argument('--batch-size', type=int, default=20, metavar='BS',
                         help='batch size (default: 20)')
     parser.add_argument('--num-threads', type=int, default=4, metavar='BS',
                         help='num threads (default: 4)')
@@ -33,13 +33,13 @@ if __name__ == "__main__":
     writer = SummaryWriter(args.tensorboard)
 
     t.set_num_threads(args.num_threads)
-    loader = Dataloader('/home/daniil/projects/attentive-translation/dataloader/data/')
+    loader = Dataloader('./dataloader/data/')
 
-    model = Transormer(loader.vocab_size, loader.max_len, 4, 10, 120, 25, 25, None, dropout=args.dropout)
+    model = Transormer(loader.vocab_size, loader.max_len, layers=6, heads=8, h_size=500, k_size=65, drop=args.dropout)
     if args.use_cuda:
         model = model.cuda()
 
-    optimizer = ScheduledOptim(Adam(model.learnable_parameters(), betas=(0.9, 0.98), eps=1e-9), 120, 5000)
+    optimizer = ScheduledOptim(Adam(model.learnable_parameters(), betas=(0.9, 0.98), eps=1e-9), 500, 5000)
 
     crit = nn.CrossEntropyLoss(size_average=False, ignore_index=0)
 
@@ -47,6 +47,7 @@ if __name__ == "__main__":
 
     for i in range(args.num_iterations):
 
+        optimizer.zero_grad()
         optimizer.update_learning_rate()
 
         out = 0
@@ -60,7 +61,6 @@ if __name__ == "__main__":
             nll.backward()
 
         optimizer.step()
-        optimizer.zero_grad()
 
         if i % 25 == 0:
             writer.add_scalar('nll', out, i)

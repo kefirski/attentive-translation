@@ -1,13 +1,12 @@
 import torch as t
 import torch.nn as nn
 
-from .context_wise_nn import ContextWiseNN
+from .position_wise_nn import PositionWiseNN
 from ..attention import MultiHeadAttention
-from ..conv import GLUResNet
 
 
 class Decoder(nn.Module):
-    def __init__(self, n_layers, n_heads, h_size, k_size, v_size, m_size, dropout=0.1):
+    def __init__(self, n_layers, n_heads, h_size, k_size, v_size, dropout=0.1):
         """
         :param n_heads: Number of attention heads
         :param h_size: hidden size of input
@@ -17,10 +16,8 @@ class Decoder(nn.Module):
         """
         super(Decoder, self).__init__()
 
-        self.conv = GLUResNet(h_size, 4, autoregressive=True)
-
         self.layers = nn.ModuleList([
-            DecoderLayer(True, n_heads, h_size, k_size, v_size, m_size, dropout)
+            DecoderLayer(True, n_heads, h_size, k_size, v_size, dropout)
             for _ in range(n_layers)
         ])
 
@@ -33,10 +30,6 @@ class Decoder(nn.Module):
         """
 
         batch_size, input_len, _ = input.size()
-
-        input = input.transpose(1, 2)
-        input = self.conv(input)
-        input = input.transpose(1, 2)
 
         self_mask = t.eq(input.abs().sum(2), 0).data
         self_mask = self_mask.unsqueeze(1).repeat(1, input_len, 1)
@@ -59,7 +52,7 @@ class Decoder(nn.Module):
 
 
 class DecoderLayer(nn.Module):
-    def __init__(self, out, n_heads, h_size, k_size, v_size, m_size, dropout=0.1):
+    def __init__(self, out, n_heads, h_size, k_size, v_size, dropout=0.1):
         """
         :param n_heads: Number of attention heads
         :param h_size: hidden size of input
@@ -71,9 +64,9 @@ class DecoderLayer(nn.Module):
 
         self.out = out
 
-        self.self_attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, m_size, dropout)
-        self.out_attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, None, dropout) if out else None
-        self.wise = ContextWiseNN(h_size, h_size * 2, autoregressive=True, dropout=dropout)
+        self.self_attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, dropout)
+        self.out_attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, dropout) if out else None
+        self.wise = PositionWiseNN(h_size, h_size * 4, dropout)
 
     def forward(self, input, condition, self_mask=None, out_mask=None):
         """

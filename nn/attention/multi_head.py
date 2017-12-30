@@ -7,7 +7,7 @@ from .scaled_dot_product import ScaledDotProductAttention
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, n_heads, h_size, k_size, v_size, m_size, p=0.1):
+    def __init__(self, n_heads, h_size, k_size, v_size, p=0.1):
         """
         :param n_heads: Number of attention heads
         :param h_size: hidden size of input
@@ -25,7 +25,7 @@ class MultiHeadAttention(nn.Module):
         for param in [self.q_proj, self.k_proj, self.v_proj]:
             xavier_normal(param.data)
 
-        self.attention = ScaledDotProductAttention(k_size, m_size, p)
+        self.attention = ScaledDotProductAttention(k_size, p)
 
         self.out = nn.Linear(n_heads * v_size, h_size)
         self.layer_norm = LayerNorm(h_size)

@@ -5,6 +5,7 @@ import numpy as np
 import torch as t
 from six.moves import cPickle
 from torch.autograd import Variable
+
 from .beam import Beam
 
 
@@ -171,15 +172,13 @@ class Dataloader():
 
         return condition, input, target
 
-    def go_input(self, batch_size, cuda):
+    def go_input(self, batch_size, cuda, volatile=True):
 
-        go_input = np.array([[self.token_to_idx[self.go_token]]] * batch_size)
-        go_input = Variable(t.from_numpy(go_input)).long()
-
+        tensor = Variable(t.LongTensor([[self.token_to_idx[self.go_token]]] * batch_size), volatile=volatile)
         if cuda:
-            go_input = go_input.cuda()
+            tensor = tensor.cuda()
 
-        return go_input
+        return tensor
 
     def to_tensor(self, lines, cuda, volatile=True):
 
@@ -193,7 +192,7 @@ class Dataloader():
 
     def sample_char(self, probs, n_beams):
 
-        probs = [[i, val] for i, val in enumerate(probs)]
+        probs = [[i, p] for i, p in enumerate(probs)]
         probs = sorted(probs, key=lambda pair: pair[1])[-n_beams:]
 
         return [Beam(p, self.idx_to_token[idx]) for idx, p in probs]
