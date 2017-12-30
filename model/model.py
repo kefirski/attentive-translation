@@ -1,3 +1,4 @@
+import torch as t
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.weight_norm import weight_norm
@@ -39,13 +40,14 @@ class Transormer(nn.Module):
 
         batch_size, seq_len = input.size()
 
+        condition_mask = t.eq(condition, 0).data
+        input_mask = t.eq(input, 0).data
+
         condition = self.embeddings(condition)
         input = self.embeddings(input)
 
-        condition, condition_mask = self.encoder(condition)
-
-        condition_mask = condition_mask.unsqueeze(1).repeat(1, seq_len, 1)
-        out = self.decoder(input, condition, condition_mask)
+        condition = self.encoder(condition, condition_mask)
+        out = self.decoder(input, condition, input_mask, condition_mask)
 
         out = out.view(batch_size * seq_len, -1)
         out = self.out_fc(out).view(batch_size, seq_len, -1)

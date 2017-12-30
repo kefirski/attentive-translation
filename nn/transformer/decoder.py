@@ -21,24 +21,30 @@ class Decoder(nn.Module):
             for _ in range(n_layers)
         ])
 
-    def forward(self, input, condition, condition_mask=None):
+    def forward(self, input, condition, input_mask=None, condition_mask=None):
         """
         :param input: An float tensor with shape of [batch_size, input_len, h_size]
         :param condition: An float tensor with shape of [batch_size, condition_len, h_size]
-        :param condition_mask: An byte tensor with shape of [batch_size, input_len, encoder_len]
+        :param input_mask: An byte tensor with shape of [batch_size, input_len, encoder_len]
+        :param condition_mask: An byte tensor with shape of [batch_size, condition_len, encoder_len]
         :return: An float tensor with shape of [batch_size, seq_len, h_size]
         """
 
         batch_size, input_len, _ = input.size()
 
-        self_mask = t.eq(input.abs().sum(2), 0).data
-        self_mask = self_mask.unsqueeze(1).repeat(1, input_len, 1)
-        self_mask += self.autogressive_mask(batch_size, input_len, input.is_cuda)
-        self_mask = t.ge(self_mask, 1)
+        if input_mask is not None:
+            input_mask = input_mask.unsqueeze(1).repeat(1, input_len, 1)
+            input_mask += self.autogressive_mask(batch_size, input_len, input.is_cuda)
+            input_mask = t.ge(input_mask, 1)
+        else:
+            input_mask = self.autogressive_mask(batch_size, input_len, input.is_cuda)
+
+        if condition_mask is not None:
+            condition_mask = condition_mask.unsqueeze(1).repeat(1, input_len, 1)
 
         out = input
         for layer in self.layers:
-            out = layer(out, condition, self_mask, condition_mask)
+            out = layer(out, condition, input_mask, condition_mask)
 
         return out
 

@@ -21,20 +21,20 @@ class Encoder(nn.Module):
             for _ in range(n_layers)
         ])
 
-    def forward(self, input):
+    def forward(self, input, mask=None):
         """
         :param input: An float tensor with shape of [batch_size, seq_len, h_size]
         :return: An float tensor with shape of [batch_size, seq_len, h_size]
         """
 
-        mask = t.eq(input.abs().sum(2), 0).data
-        mask_app = mask.unsqueeze(1).repeat(1, mask.size(1), 1)
+        if mask is not None:
+            mask = mask.unsqueeze(1).repeat(1, mask.size(1), 1)
 
         out = input
         for layer in self.layers:
-            out = layer(out, mask_app)
+            out = layer(out, mask)
 
-        return out, mask
+        return out
 
 
 class EncoderLayer(nn.Module):
