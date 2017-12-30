@@ -16,14 +16,14 @@ if __name__ == "__main__":
                         help='num iterations (default: 250_000)')
     parser.add_argument('--steps', type=int, default=5, metavar='S',
                         help='num steps before optimization step (default: 5)')
-    parser.add_argument('--batch-size', type=int, default=2, metavar='BS',
+    parser.add_argument('--batch-size', type=int, default=20, metavar='BS',
                         help='batch size (default: 20)')
     parser.add_argument('--num-threads', type=int, default=4, metavar='BS',
                         help='num threads (default: 4)')
     parser.add_argument('--use-cuda', type=bool, default=False, metavar='CUDA',
                         help='use cuda (default: False)')
-    parser.add_argument('--dropout', type=float, default=0.15, metavar='D',
-                        help='dropout rate (default: 0.15)')
+    parser.add_argument('--dropout', type=float, default=0.1, metavar='D',
+                        help='dropout rate (default: 0.1)')
     parser.add_argument('--save', type=str, default='trained_model', metavar='TS',
                         help='path where save trained model to (default: "trained_model")')
     parser.add_argument('--tensorboard', type=str, default='default_tb', metavar='TB',
@@ -56,8 +56,6 @@ if __name__ == "__main__":
 
             nll = model.loss(condition, input, target, crit)
             nll /= args.steps
-            print(nll)
-            1/0
             out += nll.cpu().data
 
             nll.backward()
