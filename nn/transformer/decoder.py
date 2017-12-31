@@ -21,30 +21,24 @@ class Decoder(nn.Module):
             for _ in range(n_layers)
         ])
 
-    def forward(self, input, condition, input_mask=None, condition_mask=None):
+    def forward(self, input, condition, condition_mask=None):
         """
         :param input: An float tensor with shape of [batch_size, input_len, h_size]
         :param condition: An float tensor with shape of [batch_size, condition_len, h_size]
-        :param input_mask: An byte tensor with shape of [batch_size, input_len, encoder_len]
         :param condition_mask: An byte tensor with shape of [batch_size, condition_len, encoder_len]
         :return: An float tensor with shape of [batch_size, seq_len, h_size]
         """
 
         batch_size, input_len, _ = input.size()
 
-        if input_mask is not None:
-            input_mask = input_mask.unsqueeze(1).repeat(1, input_len, 1)
-            input_mask += self.autogressive_mask(batch_size, input_len, input.is_cuda)
-            input_mask = t.ge(input_mask, 1)
-        else:
-            input_mask = self.autogressive_mask(batch_size, input_len, input.is_cuda)
+        self_mask = self.autogressive_mask(batch_size, input_len, input.is_cuda)
 
         if condition_mask is not None:
             condition_mask = condition_mask.unsqueeze(1).repeat(1, input_len, 1)
 
         out = input
         for layer in self.layers:
-            out = layer(out, condition, input_mask, condition_mask)
+            out = layer(out, condition, self_mask, condition_mask)
 
         return out
 
@@ -74,7 +68,7 @@ class DecoderLayer(nn.Module):
         self.out_attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, dropout) if out else None
         self.wise = PositionWiseNN(h_size, h_size * 4, dropout)
 
-    def forward(self, input, condition, self_mask=None, out_mask=None):
+    def forward(self, input, condition, self_mask, out_mask=None):
         """
         :param input: An float tensor with shape of [batch_size, decoder_len, h_size]
         :param condition: An float tensor with shape of [batch_size, encoder_len, h_size]

@@ -40,14 +40,13 @@ class Transormer(nn.Module):
 
         batch_size, seq_len = input.size()
 
-        condition_mask = t.eq(condition, 0).data
-        input_mask = t.eq(input, 0).data
+        mask = t.eq(condition, 0).data
 
         condition = self.embeddings(condition)
         input = self.embeddings(input)
 
-        condition = self.encoder(condition, condition_mask)
-        out = self.decoder(input, condition, input_mask, condition_mask)
+        condition = self.encoder(condition, mask)
+        out = self.decoder(input, condition, mask)
 
         out = out.view(batch_size * seq_len, -1)
         out = self.out_fc(out).view(batch_size, seq_len, -1)
