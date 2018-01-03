@@ -1,15 +1,13 @@
-import torch as t
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.weight_norm import weight_norm
 
 from dataloader import *
-from nn.embedding import PositionalEmbeddings
 from nn.transformer import Encoder, Decoder
 
 
 class Transormer(nn.Module):
-    def __init__(self, vocab_size, max_seq_len, layers, heads, h_size, k_size, drop):
+    def __init__(self, vocab_size, max_len, pad_idx, layers, heads, h_size, k_size, drop):
         """
         :param heads: Number of attention heads
         :param h_size: hidden size of input
@@ -20,15 +18,15 @@ class Transormer(nn.Module):
 
         self.vocab_size = vocab_size
 
-        self.embeddings = PositionalEmbeddings(vocab_size, max_seq_len, h_size)
-
-        self.encoder = Encoder(layers, heads, h_size, k_size, k_size, drop)
-        self.decoder = Decoder(layers, heads, h_size, k_size, k_size, drop)
+        self.encoder = Encoder(vocab_size['en'], max_len['en'], pad_idx['en'],
+                               layers, heads, h_size, k_size, k_size, drop)
+        self.decoder = Decoder(vocab_size['ru'], max_len['ru'], pad_idx['ru'],
+                               layers, heads, h_size, k_size, k_size, drop)
 
         self.out_fc = nn.Sequential(
             weight_norm(nn.Linear(h_size, 4 * h_size)),
             nn.SELU(),
-            weight_norm(nn.Linear(4 * h_size, vocab_size))
+            weight_norm(nn.Linear(4 * h_size, vocab_size['ru']))
         )
 
     def forward(self, condition, input):
@@ -40,12 +38,7 @@ class Transormer(nn.Module):
 
         batch_size, seq_len = input.size()
 
-        mask = t.eq(condition, 0).data
-
-        condition = self.embeddings(condition)
-        input = self.embeddings(input)
-
-        condition = self.encoder(condition, mask)
+        condition, mask = self.encoder(condition)
         out = self.decoder(input, condition, mask)
 
         out = out.view(batch_size * seq_len, -1)
@@ -63,24 +56,22 @@ class Transormer(nn.Module):
             self.train()
 
         out = self(condition, input)
-        out = out.view(-1, self.vocab_size)
+        out = out.view(-1, self.vocab_size['ru'])
         target = target.view(-1)
 
         nll = criterion(out, target) / batch_size
 
         return nll
 
-    def generate(self, condition, loader: Dataloader, max_len=200, n_beams=35):
+    def generate(self, condition, loader: Dataloader, max_len=80, n_beams=35):
 
         self.eval()
 
         use_cuda = condition.is_cuda
 
-        condition = self.embeddings(condition)
-        condition = self.encoder(condition)
+        condition, _ = self.encoder(condition)
 
-        input = loader.go_input(1, use_cuda)
-        input = self.embeddings(input)
+        input = loader.go_input(1, use_cuda, lang='ru', volatile=True)
 
         '''
         Starting point for beam search.
@@ -89,25 +80,28 @@ class Transormer(nn.Module):
         out = self.decoder(input, condition)
         out = out.view(1, -1)
         out = F.softmax(self.out_fc(out).squeeze(0), dim=0).data.cpu().numpy()
-        beams = loader.sample_char(out, n_beams)
+        beams = Beam.start_search(out, n_beams)
 
         condition = condition.repeat(n_beams, 1, 1)
 
-        for _ in range(max_len - 1):
+        for _ in range(max_len):
 
-            input = loader.to_tensor([beam.data for beam in beams], use_cuda)
-            input = self.embeddings(input)
+            input = loader.to_tensor([beam.data for beam in beams], use_cuda, lang='ru', volatile=True)
 
             out = self.decoder(input, condition)
             out = out[:, -1]
             out = F.softmax(self.out_fc(out), dim=1).data.cpu().numpy()
 
-            beams = loader.beam_update(beams, out)
+            beams = Beam.update(beams, out)
 
-            if all([beam.data[-1] == loader.stop_token for beam in beams]):
+            '''
+            There is no reason to continiue beam search
+            if all sequences had already emited stop symbol
+            '''
+            if all([any([idx == loader.stop_idx['ru'] for idx in beam.data]) for beam in beams]):
                 break
 
-        return beams[-1].data
+        return ' '.join(beams[-1].data)
 
     def learnable_parameters(self):
         for p in self.parameters():
