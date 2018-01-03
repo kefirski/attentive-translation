@@ -79,5 +79,5 @@ if __name__ == "__main__":
             print('_________')
             print(' '.join(map(str, target[0].cpu().data.numpy())))
             print('_________')
-            print(model.generate(condition, loader, max_len=80, n_beams=40))
+            print(model.translate(condition, loader, max_len=80, n_beams=40))
             print('_________')

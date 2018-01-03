@@ -63,13 +63,13 @@ class Transormer(nn.Module):
 
         return nll
 
-    def generate(self, condition, loader: Dataloader, max_len=80, n_beams=35):
+    def translate(self, source, loader: Dataloader, max_len=80, n_beams=35):
 
         self.eval()
 
-        use_cuda = condition.is_cuda
+        use_cuda = source.is_cuda
 
-        condition, _ = self.encoder(condition)
+        source, _ = self.encoder(source)
 
         input = loader.go_input(1, use_cuda, lang='ru', volatile=True)
 
@@ -77,18 +77,18 @@ class Transormer(nn.Module):
         Starting point for beam search.
         Generate n_beams tokens
         '''
-        out = self.decoder(input, condition)
+        out = self.decoder(input, source)
         out = out.view(1, -1)
         out = F.softmax(self.out_fc(out).squeeze(0), dim=0).data.cpu().numpy()
         beams = Beam.start_search(out, n_beams)
 
-        condition = condition.repeat(n_beams, 1, 1)
+        source = source.repeat(n_beams, 1, 1)
 
         for _ in range(max_len):
 
             input = loader.to_tensor([beam.data for beam in beams], use_cuda, lang='ru', volatile=True)
 
-            out = self.decoder(input, condition)
+            out = self.decoder(input, source)
             out = out[:, -1]
             out = F.softmax(self.out_fc(out), dim=1).data.cpu().numpy()
 

@@ -36,12 +36,13 @@ class Encoder(nn.Module):
         """
 
         mask = t.eq(input, self.pad_idx).data
+        mask_unrolled = self.unroll_mask(mask, mask.size(1))
 
         input = self.embeddings(input)
 
         out = input
         for layer in self.layers:
-            out = layer(out, self.unroll_mask(mask, mask.size(1)))
+            out = layer(out, mask_unrolled)
 
         return out, mask
 
