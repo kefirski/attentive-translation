@@ -82,7 +82,7 @@ if __name__ == "__main__":
                 shell=True
             )
             print('_________')
-            indexes = ' '.join(map(str, target[0].cpu().data.numpy()))
+            indexes = ' '.join(map(str, target[0].cpu().data.numpy()[1:]))
             subprocess.Popen(
                 'echo "{}" | spm_decode --model=./dataloader/data/ru.model --input_format=id'.format(indexes),
                 shell=True
