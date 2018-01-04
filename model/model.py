@@ -101,7 +101,7 @@ class Transormer(nn.Module):
             if all([any([idx == loader.stop_idx['ru'] for idx in beam.data]) for beam in beams]):
                 break
 
-        return ' '.join(beams[-1].data)
+        return ' '.join([idx for i, idx in enumerate(beams[-1].data) if not loader.stop_idx['ru'] in x[:i + 1]])
 
     def learnable_parameters(self):
         for p in self.parameters():
