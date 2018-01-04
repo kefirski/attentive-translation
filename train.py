@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 
 import torch as t
 import torch.nn as nn
@@ -75,9 +76,21 @@ if __name__ == "__main__":
 
         if i % 500 == 0:
             condition, _, target = loader.torch(1, 'valid', args.use_cuda, volatile=True)
-            print(' '.join(map(str, condition[0].cpu().data.numpy())))
+            indexes = ' '.join(map(str, condition[0].cpu().data.numpy()))
+            subprocess.Popen(
+                'echo "{}" | spm_decode --model=./dataloader/data/en.model --input_format=id'.format(indexes),
+                shell=True
+            )
             print('_________')
-            print(' '.join(map(str, target[0].cpu().data.numpy())))
+            indexes = ' '.join(map(str, target[0].cpu().data.numpy()))
+            subprocess.Popen(
+                'echo "{}" | spm_decode --model=./dataloader/data/ru.model --input_format=id'.format(indexes),
+                shell=True
+            )
             print('_________')
-            print(model.translate(condition, loader, max_len=80, n_beams=40))
+            indexes = model.translate(condition, loader, max_len=80, n_beams=40)
+            subprocess.Popen(
+                'echo "{}" | spm_decode --model=./dataloader/data/ru.model --input_format=id'.format(indexes),
+                shell=True
+            )
             print('_________')
