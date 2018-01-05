@@ -37,11 +37,11 @@ if __name__ == "__main__":
     loader = Dataloader('./dataloader/data/')
 
     model = Transormer(loader.vocab_size, loader.max_len, loader.pad_idx,
-                       layers=6, heads=8, h_size=500, k_size=65, drop=args.dropout)
+                       layers=6, heads=8, h_size=512, k_size=64, drop=args.dropout)
     if args.use_cuda:
         model = model.cuda()
 
-    optimizer = ScheduledOptim(Adam(model.learnable_parameters(), betas=(0.9, 0.98), eps=1e-9), 500, 4000)
+    optimizer = ScheduledOptim(Adam(model.learnable_parameters(), betas=(0.9, 0.98), eps=1e-9), 512, 4000)
 
     crit = nn.CrossEntropyLoss(size_average=False, ignore_index=loader.pad_idx['ru'])
 

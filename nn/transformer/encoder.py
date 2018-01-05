@@ -62,7 +62,7 @@ class EncoderLayer(nn.Module):
         """
         super(EncoderLayer, self).__init__()
         self.attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, dropout)
-        self.wise = PositionWiseNN(h_size, h_size * 4, dropout)
+        self.position_wise = PositionWiseNN(h_size, h_size * 4, dropout)
 
     def forward(self, input, mask=None):
         """
@@ -77,6 +77,6 @@ class EncoderLayer(nn.Module):
         '''
 
         out, _ = self.attention(q=input, k=input, v=input, mask=mask)
-        out = self.wise(out)
+        out = self.position_wise(out)
 
         return out

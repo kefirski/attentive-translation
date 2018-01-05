@@ -24,7 +24,7 @@ class Decoder(nn.Module):
         self.embeddings = PositionalEmbeddings(vocab_size, max_len, h_size, pad_idx)
 
         self.layers = nn.ModuleList([
-            DecoderLayer(True, n_heads, h_size, k_size, v_size, dropout)
+            DecoderLayer(n_heads, h_size, k_size, v_size, dropout)
             for _ in range(n_layers)
         ])
 
@@ -61,7 +61,7 @@ class Decoder(nn.Module):
 
 
 class DecoderLayer(nn.Module):
-    def __init__(self, out, n_heads, h_size, k_size, v_size, dropout=0.1):
+    def __init__(self, n_heads, h_size, k_size, v_size, dropout=0.1):
         """
         :param n_heads: Number of attention heads
         :param h_size: hidden size of input
@@ -71,11 +71,9 @@ class DecoderLayer(nn.Module):
         """
         super(DecoderLayer, self).__init__()
 
-        self.out = out
-
         self.self_attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, dropout)
-        self.out_attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, dropout) if out else None
-        self.wise = PositionWiseNN(h_size, h_size * 4, dropout)
+        self.out_attention = MultiHeadAttention(n_heads, h_size, k_size, v_size, dropout)
+        self.position_wise = PositionWiseNN(h_size, h_size * 4, dropout)
 
     def forward(self, input, condition, self_mask, out_mask=None):
         """
@@ -86,9 +84,8 @@ class DecoderLayer(nn.Module):
         :return: An float tensor with shape of [batch_size, seq_len, h_size]
         """
 
-        out, _ = self.self_attention(q=input, k=input, v=input, mask=self_mask)
-        if self.out:
-            out, _ = self.out_attention(q=out, k=condition, v=condition, mask=out_mask)
-        out = self.wise(out)
+        result, _ = self.self_attention(q=input, k=input, v=input, mask=self_mask)
+        result, _ = self.out_attention(q=result, k=condition, v=condition, mask=out_mask)
+        result = self.position_wise(result)
 
-        return out + input
+        return result
