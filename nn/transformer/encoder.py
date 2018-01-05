@@ -76,7 +76,7 @@ class EncoderLayer(nn.Module):
         thus q, k and v are all obtained as encoder input.
         '''
 
-        out, _ = self.attention(q=input, k=input, v=input, mask=mask)
-        out = self.position_wise(out)
+        result, _ = self.attention(q=input, k=input, v=input, mask=mask)
+        result = self.position_wise(result)
 
-        return out
+        return result
