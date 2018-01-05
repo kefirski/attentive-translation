@@ -88,7 +88,7 @@ if __name__ == "__main__":
                 shell=True
             )
             print('_________')
-            indexes = model.translate(condition, loader, max_len=80, n_beams=40)
+            indexes = model.translate(condition, loader, max_len=30, n_beams=10)
             subprocess.Popen(
                 'echo "{}" | spm_decode --model=./dataloader/data/ru.model --input_format=id'.format(indexes),
                 shell=True
