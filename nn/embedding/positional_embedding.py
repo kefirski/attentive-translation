@@ -6,25 +6,25 @@ from torch.autograd import Variable
 
 
 class PositionalEmbeddings(nn.Module):
-    def __init__(self, path, vocab_size, max_len, emb_size, padding_idx=0):
+    def __init__(self, path, vocab_size, max_len, h_size, padding_idx=0):
         super(PositionalEmbeddings, self).__init__()
 
         self.max_len = max_len
-        self.embedding_size = emb_size
+        self.embedding_size = h_size
 
         self.padding_idx = padding_idx
 
-        self.token_embeddings = nn.Embedding(vocab_size, emb_size, padding_idx=padding_idx)
-        self.positional_embeddings = nn.Embedding(int(max_len), emb_size, padding_idx=0)
+        self.token_embeddings = nn.Embedding(vocab_size, h_size, padding_idx=padding_idx)
+        self.positional_embeddings = nn.Embedding(int(max_len), h_size, padding_idx=0)
 
         '''
         w2v model contains vectors for each index in vocabulary.
         Here we lockup them and add vectors for go, end and pad tokens
         '''
-        keyed_vectors = KeyedVectors.load(path)
-        embeddings = np.array([keyed_vectors.wv[str(idx)] if str(idx) in keyed_vectors.vocab else np.zeros(1, emb_size)
+        keyed_vectors = KeyedVectors.load_word2vec_format(path, binary=True)
+        embeddings = np.array([keyed_vectors.wv[str(idx)] if str(idx) in keyed_vectors.vocab else np.zeros([1, h_size])
                                for idx in range(vocab_size - 3)])
-        embeddings = np.concatenate([embeddings, np.ones([3, emb_size])], 0)
+        embeddings = np.concatenate([embeddings, np.ones([3, h_size])], 0)
         self.token_embeddings.weight = nn.Parameter(t.from_numpy(embeddings), requires_grad=False)
         self.position_encoding_init()
 
