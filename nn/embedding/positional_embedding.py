@@ -21,7 +21,7 @@ class PositionalEmbeddings(nn.Module):
         w2v model contains vectors for each index in vocabulary.
         Here we lockup them and add vectors for go, end and pad tokens
         '''
-        keyed_vectors = KeyedVectors.load_word2vec_format(path, binary=True)
+        keyed_vectors = KeyedVectors.load(path)
         embeddings = np.array([keyed_vectors.word_vec(str(idx)) for idx in range(vocab_size - 3)])
         embeddings = np.concatenate([embeddings, np.ones([3, embedding_size])], 0)
         self.token_embeddings.weight = nn.Parameter(t.from_numpy(embeddings), requires_grad=False)
