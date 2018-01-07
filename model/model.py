@@ -23,7 +23,7 @@ class Transormer(nn.Module):
                                layers, heads, h_size, k_size, k_size, drop)
 
         self.out_fc = nn.Linear(h_size, self.vocab_size['ru'], bias=False)
-        self.out_fc.weight = self.decoder.embeddings.embeddings.weight
+        self.out_fc.weight = self.decoder.embeddings.token_embeddings.weight
 
     def forward(self, condition, input):
         """

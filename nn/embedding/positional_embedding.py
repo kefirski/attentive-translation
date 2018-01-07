@@ -22,9 +22,8 @@ class PositionalEmbeddings(nn.Module):
         Here we lockup them and add vectors for go, end and pad tokens
         '''
         keyed_vectors = KeyedVectors.load_word2vec_format(path, binary=True)
-        embeddings = np.array([keyed_vectors.wv[str(idx)] if str(idx) in keyed_vectors.vocab else np.zeros([1, h_size])
-                               for idx in range(vocab_size - 3)])
-        embeddings = np.concatenate([embeddings, np.ones([3, h_size])], 0)
+        embeddings = np.array([keyed_vectors.wv[str(idx)] if str(idx) in keyed_vectors.vocab else np.zeros([h_size])
+                               for idx in range(vocab_size)])
         self.token_embeddings.weight = nn.Parameter(t.from_numpy(embeddings), requires_grad=False)
         self.position_encoding_init()
 
