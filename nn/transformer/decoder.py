@@ -21,7 +21,8 @@ class Decoder(nn.Module):
         """
         super(Decoder, self).__init__()
 
-        self.embeddings = PositionalEmbeddings(vocab_size, max_len, h_size, pad_idx)
+        self.embeddings = PositionalEmbeddings('./dataloader/data/ru_embeddings.bin',
+                                               vocab_size, max_len, h_size, pad_idx)
 
         self.layers = nn.ModuleList([
             DecoderLayer(n_heads, h_size, k_size, v_size, dropout)

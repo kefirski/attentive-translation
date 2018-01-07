@@ -1,6 +1,5 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils.weight_norm import weight_norm
 
 from dataloader import *
 from nn.transformer import Encoder, Decoder
@@ -23,11 +22,8 @@ class Transormer(nn.Module):
         self.decoder = Decoder(vocab_size['ru'], max_len['ru'], pad_idx['ru'],
                                layers, heads, h_size, k_size, k_size, drop)
 
-        self.out_fc = nn.Sequential(
-            weight_norm(nn.Linear(h_size, 4 * h_size)),
-            nn.SELU(),
-            weight_norm(nn.Linear(4 * h_size, vocab_size['ru']))
-        )
+        self.out_fc = nn.Linear(h_size, self.vocab_size['ru'], bias=False)
+        self.out_fc.weight = self.decoder.embeddings.embeddings.weight
 
     def forward(self, condition, input):
         """

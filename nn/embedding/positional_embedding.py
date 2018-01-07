@@ -1,12 +1,12 @@
 import numpy as np
 import torch as t
 import torch.nn as nn
+from gensim.models.keyedvectors import KeyedVectors
 from torch.autograd import Variable
-from torch.nn.init import xavier_normal
 
 
 class PositionalEmbeddings(nn.Module):
-    def __init__(self, vocab_size, max_len, embedding_size, padding_idx=0):
+    def __init__(self, path, vocab_size, max_len, embedding_size, padding_idx=0):
         super(PositionalEmbeddings, self).__init__()
 
         self.max_len = max_len
@@ -14,11 +14,17 @@ class PositionalEmbeddings(nn.Module):
 
         self.padding_idx = padding_idx
 
-        self.embeddings = nn.Embedding(vocab_size, embedding_size, padding_idx=padding_idx)
+        self.token_embeddings = nn.Embedding(vocab_size, embedding_size, padding_idx=padding_idx)
         self.positional_embeddings = nn.Embedding(int(max_len), embedding_size, padding_idx=0)
 
-        self.embeddings.weight = xavier_normal(self.embeddings.weight)
-        self.embeddings.weight.data[padding_idx].fill_(0)
+        '''
+        w2v model contains vectors for each index in vocabulary.
+        Here we lockup them and add vectors for go, end and pad tokens
+        '''
+        keyed_vectors = KeyedVectors.load_word2vec_format(path, binary=True)
+        embeddings = np.array([keyed_vectors.word_vec(str(idx)) for idx in range(vocab_size - 3)])
+        embeddings = np.concatenate([embeddings, np.ones([3, embedding_size])], 0)
+        self.token_embeddings.weight = nn.Parameter(t.from_numpy(embeddings), requires_grad=False)
         self.position_encoding_init()
 
     def forward(self, input):
@@ -28,7 +34,7 @@ class PositionalEmbeddings(nn.Module):
         if input.is_cuda:
             positional = positional.cuda()
 
-        return self.embeddings(input) + self.positional_embeddings(positional)
+        return self.token_embeddings(input) + self.positional_embeddings(positional)
 
     def position_encoding_init(self):
         encoding = np.array([

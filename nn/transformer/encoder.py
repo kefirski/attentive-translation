@@ -22,7 +22,8 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
 
         self.pad_idx = pad_idx
-        self.embeddings = PositionalEmbeddings(vocab_size, max_len, h_size, pad_idx)
+        self.embeddings = PositionalEmbeddings('./dataloader/data/en_embeddings.bin',
+                                               vocab_size, max_len, h_size, pad_idx)
 
         self.layers = nn.ModuleList([
             EncoderLayer(n_heads, h_size, k_size, v_size, dropout)
